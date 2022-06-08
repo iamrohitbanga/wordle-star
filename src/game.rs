@@ -16,12 +16,7 @@ pub struct Game<'a> {
 
 impl<'a> Game<'a> {
     pub fn new(dict: &'a Dictionary, target_word: String) -> Game<'a> {
-        let actual_length = target_word.chars().count();
-        if dict.word_length != actual_length {
-            panic!("target word length incorrect. Actual: {0}, Expected: {1}", actual_length, dict.word_length);
-        }
-
-        if !dict.contains(&target_word) {
+        if !Game::is_word_allowed_in_dict(&dict, &target_word) {
             panic!("target word not present in dictionary");
         }
 
@@ -30,6 +25,22 @@ impl<'a> Game<'a> {
             keymap: HashMap::new(),
             target_word: target_word,
         };
+    }
+
+    fn is_word_allowed_in_dict(dict: &Dictionary, word: &String) -> bool {
+        dict.contains(&word)
+    }
+
+    fn is_word_allowed(&self, word: &String) -> bool {
+        Game::is_word_allowed_in_dict(&self.dict, &word)
+    }
+
+    pub fn guess_word(&self, word: &String) -> bool {
+        if !self.is_word_allowed(&word) {
+            return false;
+        }
+
+        return true;
     }
 }
 
@@ -48,7 +59,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected="target word length incorrect. Actual: 4, Expected: 3")]
+    #[should_panic(expected="target word not present in dictionary")]
     fn test_target_word_length_not_same() {
         let mut dict = Dictionary::new(3);
         dict.add_word_str("rat");
@@ -67,5 +78,28 @@ mod tests {
         dict.add_word_str("cat");
 
         Game::new(&dict, "mat".to_string());
+    }
+
+    #[test]
+    fn test_guess_invalid_word() {
+        let dict = sample_dict();
+        let game = Game::new(&dict, "mat".to_string());
+        assert_eq!(false, game.guess_word(&"abc".to_string()));
+    }
+
+    #[test]
+    fn test_guess_valid_word() {
+        let dict = sample_dict();
+        let game = Game::new(&dict, "mat".to_string());
+        assert_eq!(true, game.guess_word(&"sat".to_string()));
+    }
+
+    fn sample_dict() -> Dictionary {
+        let mut dict = Dictionary::new(3);
+        dict.add_word_str("rat");
+        dict.add_word_str("sat");
+        dict.add_word_str("mat");
+        dict.add_word_str("cat");
+        dict
     }
 }
