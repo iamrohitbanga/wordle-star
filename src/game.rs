@@ -59,7 +59,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected="target word not present in dictionary")]
+    #[should_panic(expected = "target word not present in dictionary")]
     fn test_target_word_length_not_same() {
         let mut dict = Dictionary::new(3);
         dict.add_word_str("rat");
@@ -70,7 +70,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected="target word not present in dictionary")]
+    #[should_panic(expected = "target word not present in dictionary")]
     fn test_target_word_not_in_dictionary() {
         let mut dict = Dictionary::new(3);
         dict.add_word_str("rat");

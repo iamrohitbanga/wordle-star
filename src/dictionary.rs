@@ -24,7 +24,10 @@ impl Dictionary {
     pub fn add_word(&mut self, word: &String) {
         let actual_length = word.chars().count();
         if self.word_length != actual_length {
-            panic!("Incorrect word length. Actual: {0}, Expected: {1}", actual_length, self.word_length);
+            panic!(
+                "Incorrect word length. Actual: {0}, Expected: {1}",
+                actual_length, self.word_length
+            );
         }
         self.wordset.insert(word.to_string());
     }
@@ -47,7 +50,7 @@ mod tests {
     use super::*;
 
     #[test]
-    #[should_panic(expected="word length must be positive")]
+    #[should_panic(expected = "word length must be positive")]
     fn test_word_length_zero() {
         Dictionary::new(0);
     }
@@ -76,10 +79,10 @@ mod tests {
         assert_eq!(true, dict.contains(&"bc".to_string()));
         assert_eq!(false, dict.contains(&"ca".to_string()));
         assert_eq!(2, dict.len());
-     }
+    }
 
     #[test]
-    #[should_panic(expected="Incorrect word length. Actual: 3, Expected: 4")]
+    #[should_panic(expected = "Incorrect word length. Actual: 3, Expected: 4")]
     fn test_word_length_mismatch() {
         let mut dict = Dictionary::new(4);
         dict.add_word_str("abc");
