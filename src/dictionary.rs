@@ -6,8 +6,8 @@ use std::collections::HashSet;
  */
 #[derive(Debug)]
 pub struct Dictionary {
-    wordset: HashSet<String>,
-    word_length: usize,
+    pub wordset: HashSet<String>,
+    pub word_length: usize,
 }
 
 impl Dictionary {
