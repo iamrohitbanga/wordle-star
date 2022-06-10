@@ -76,7 +76,9 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected="invalid state: character a. previous state: NotFound incompatible with new state: CorrectPosition")]
+    #[should_panic(
+        expected = "invalid state: character a. previous state: NotFound incompatible with new state: CorrectPosition"
+    )]
     fn test_invalid_state_change() {
         let mut keyview = KeyboardView::new();
         keyview.record_guess(&('a', CharState::NotFound));
