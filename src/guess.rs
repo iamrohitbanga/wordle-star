@@ -1,11 +1,11 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub enum CharState {
-    NotFound,
-    CorrectPosition,
-    IncorrectPosition,
+    NotFound = 1,
+    IncorrectPosition = 2,
+    CorrectPosition = 3,
 }
 
-type CharGuess = (char, CharState);
+pub type CharGuess = (char, CharState);
 
 #[derive(Debug, PartialEq)]
 pub struct GuessResult {

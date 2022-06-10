@@ -1,4 +1,5 @@
 use crate::dictionary::Dictionary;
+
 use crate::guess::CharState;
 use crate::guess::GuessResult;
 use std::cmp;
@@ -7,7 +8,6 @@ use std::collections::HashSet;
 
 pub struct Game<'a> {
     dict: &'a Dictionary,
-    charmap: HashMap<char, CharState>,
     target_word: String,
     target_positions_map: HashMap<char, HashSet<usize>>,
 }
@@ -21,7 +21,6 @@ impl<'a> Game<'a> {
         println!("positions map defined: {:?}", positions_map);
         return Game {
             dict: dict,
-            charmap: HashMap::new(),
             target_word: target_word.to_string(),
             target_positions_map: positions_map,
         };
