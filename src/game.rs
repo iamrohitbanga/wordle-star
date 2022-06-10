@@ -1,14 +1,9 @@
 use crate::dictionary::Dictionary;
+use crate::guess::CharState;
+use crate::guess::GuessResult;
 use std::cmp;
 use std::collections::HashMap;
 use std::collections::HashSet;
-
-#[derive(Debug, PartialEq)]
-pub enum CharState {
-    NotFound,
-    CorrectPosition,
-    IncorrectPosition,
-}
 
 pub struct Game<'a> {
     dict: &'a Dictionary,
@@ -40,21 +35,21 @@ impl<'a> Game<'a> {
         Game::is_word_allowed_in_dict(&self.dict, &word)
     }
 
-    pub fn guess_word(&mut self, word: &str) -> Option<Vec<(char, CharState)>> {
+    pub fn guess_word(&mut self, word: &str) -> Option<GuessResult> {
         if !self.is_word_allowed(&word) {
             return None;
         }
 
-        let guess_states = self.compute_guess_states(&word);
+        let guess_result = self.compute_char_guesses(&word);
 
-        Some(guess_states)
+        Some(guess_result)
     }
 
-    fn compute_guess_states(&mut self, word: &str) -> Vec<(char, CharState)> {
-        let mut guess_states = vec![];
+    fn compute_char_guesses(&mut self, word: &str) -> GuessResult {
+        let mut char_guesses = vec![];
 
         for ch in word.chars() {
-            guess_states.push((ch, CharState::NotFound));
+            char_guesses.push((ch, CharState::NotFound));
         }
 
         let guess_map = Game::compute_char_positions_map(&word);
@@ -66,7 +61,7 @@ impl<'a> Game<'a> {
                     let intersection = guess_positions.intersection(&target_positions);
                     let mut intersection_len = 0;
                     for correct_position in intersection {
-                        guess_states[*correct_position] = (ch, CharState::CorrectPosition);
+                        char_guesses[*correct_position] = (ch, CharState::CorrectPosition);
                         intersection_len += 1;
                     }
 
@@ -83,14 +78,14 @@ impl<'a> Game<'a> {
                     if extra_count > 0 {
                         let trimmed_length = cmp::min(extra_count, sorted_diff.len());
                         for incorrect_position in sorted_diff[0..trimmed_length].into_iter() {
-                            guess_states[*incorrect_position] = (ch, CharState::IncorrectPosition);
+                            char_guesses[*incorrect_position] = (ch, CharState::IncorrectPosition);
                         }
                     }
                 }
             }
         }
 
-        guess_states
+        GuessResult::new(char_guesses)
     }
 
     fn compute_char_positions_map(word: &str) -> HashMap<char, HashSet<usize>> {
@@ -159,168 +154,168 @@ mod tests {
     }
 
     #[test]
-    fn test_guess_states_for_colon() {
+    fn test_char_guesses_for_colon() {
         let dict = big_dict();
 
         let mut game = Game::new(&dict, "colon");
-        assert_guess_states(
-            &vec![
+        assert_char_guesses(
+            &GuessResult::new(vec![
                 ('c', CharState::CorrectPosition),
                 ('l', CharState::IncorrectPosition),
                 ('o', CharState::IncorrectPosition),
                 ('n', CharState::IncorrectPosition),
                 ('e', CharState::NotFound),
-            ],
+            ]),
             game.guess_word("clone"),
         );
-        assert_guess_states(
-            &vec![
+        assert_char_guesses(
+            &GuessResult::new(vec![
                 ('s', CharState::NotFound),
                 ('p', CharState::NotFound),
                 ('o', CharState::IncorrectPosition),
                 ('o', CharState::CorrectPosition),
                 ('n', CharState::CorrectPosition),
-            ],
+            ]),
             game.guess_word("spoon"),
         );
 
         // test with three occurences of same character
         // when the target word only contains it twice
-        assert_guess_states(
-            &vec![
+        assert_char_guesses(
+            &GuessResult::new(vec![
                 ('o', CharState::IncorrectPosition),
                 ('v', CharState::NotFound),
                 ('o', CharState::IncorrectPosition),
                 ('l', CharState::IncorrectPosition),
                 ('o', CharState::NotFound),
-            ],
+            ]),
             game.guess_word("ovolo"),
         );
     }
 
     #[test]
-    fn test_guess_states_for_clone() {
+    fn test_char_guesses_for_clone() {
         let dict = big_dict();
 
         let mut game = Game::new(&dict, "clone");
 
-        assert_guess_states(
-            &vec![
+        assert_char_guesses(
+            &GuessResult::new(vec![
                 ('c', CharState::CorrectPosition),
                 ('o', CharState::IncorrectPosition),
                 ('l', CharState::IncorrectPosition),
                 ('o', CharState::NotFound), // o has already been counted once
                 ('n', CharState::IncorrectPosition),
-            ],
+            ]),
             game.guess_word("colon"),
         );
 
-        assert_guess_states(
-            &vec![
+        assert_char_guesses(
+            &GuessResult::new(vec![
                 ('s', CharState::NotFound),
                 ('p', CharState::NotFound),
                 ('o', CharState::CorrectPosition),
                 ('o', CharState::NotFound), // o has already been counted once
                 ('n', CharState::IncorrectPosition),
-            ],
+            ]),
             game.guess_word("spoon"),
         );
 
         // test with three occurences of same character
         // when the target word only contains it twice.
         // One of the occurences is in the right position.
-        assert_guess_states(
-            &vec![
+        assert_char_guesses(
+            &GuessResult::new(vec![
                 ('o', CharState::NotFound),
                 ('v', CharState::NotFound),
                 ('o', CharState::CorrectPosition),
                 ('l', CharState::IncorrectPosition),
                 ('o', CharState::NotFound),
-            ],
+            ]),
             game.guess_word("ovolo"),
         );
 
-        assert_guess_states(
-            &vec![
+        assert_char_guesses(
+            &GuessResult::new(vec![
                 ('s', CharState::NotFound),
                 ('i', CharState::NotFound),
                 ('e', CharState::IncorrectPosition),
                 ('n', CharState::CorrectPosition),
                 ('a', CharState::NotFound),
-            ],
+            ]),
             game.guess_word("siena"),
         );
     }
 
     #[test]
-    fn test_guess_states_for_ovolo() {
+    fn test_char_guesses_for_ovolo() {
         let dict = big_dict();
 
         let mut game = Game::new(&dict, "ovolo");
 
-        assert_guess_states(
-            &vec![
+        assert_char_guesses(
+            &GuessResult::new(vec![
                 ('c', CharState::NotFound),
                 ('o', CharState::IncorrectPosition),
                 ('l', CharState::IncorrectPosition),
                 ('o', CharState::IncorrectPosition),
                 ('n', CharState::NotFound),
-            ],
+            ]),
             game.guess_word("colon"),
         );
 
-        assert_guess_states(
-            &vec![
+        assert_char_guesses(
+            &GuessResult::new(vec![
                 ('s', CharState::NotFound),
                 ('p', CharState::NotFound),
                 ('o', CharState::CorrectPosition),
                 ('o', CharState::IncorrectPosition),
                 ('n', CharState::NotFound),
-            ],
+            ]),
             game.guess_word("spoon"),
         );
 
-        assert_guess_states(
-            &vec![
+        assert_char_guesses(
+            &GuessResult::new(vec![
                 ('p', CharState::NotFound),
                 ('o', CharState::IncorrectPosition),
                 ('t', CharState::NotFound),
                 ('o', CharState::IncorrectPosition),
                 ('o', CharState::CorrectPosition),
-            ],
+            ]),
             game.guess_word("potoo"),
         );
 
-        assert_guess_states(
-            &vec![
+        assert_char_guesses(
+            &GuessResult::new(vec![
                 ('o', CharState::CorrectPosition),
                 ('v', CharState::CorrectPosition),
                 ('o', CharState::CorrectPosition),
                 ('l', CharState::CorrectPosition),
                 ('o', CharState::CorrectPosition),
-            ],
+            ]),
             game.guess_word("ovolo"),
         );
 
-        assert_guess_states(
-            &vec![
+        assert_char_guesses(
+            &GuessResult::new(vec![
                 ('s', CharState::NotFound),
                 ('i', CharState::NotFound),
                 ('e', CharState::NotFound),
                 ('n', CharState::NotFound),
                 ('a', CharState::NotFound),
-            ],
+            ]),
             game.guess_word("siena"),
         );
     }
 
-    fn assert_guess_states(
-        expected_states: &Vec<(char, CharState)>,
-        actual_guess_states: Option<Vec<(char, CharState)>>,
+    fn assert_char_guesses(
+        expected_states: &GuessResult,
+        actual_char_guesses: Option<GuessResult>,
     ) {
-        match actual_guess_states {
+        match actual_char_guesses {
             None => panic!("guess states not found"),
-            Some(actual_states) => assert_eq!(expected_states, &actual_states),
+            Some(actual_guess) => assert_eq!(expected_states, &actual_guess),
         }
     }
 
