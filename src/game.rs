@@ -39,6 +39,7 @@ impl<'a> Game<'a> {
     }
 
     pub fn guess_word(&mut self, word: &str) -> Option<GuessResult> {
+        // TODO: normalize for casing
         if !self.is_word_allowed(&word) {
             return None;
         }
@@ -348,6 +349,7 @@ mod tests {
         for ch in correct_position.chars() {
             assert_eq!(CharState::CorrectPosition, keyboard_view.get(ch).unwrap(), "did not match for char: {ch}");
         }
+        // TODO: Add stricter checks for characters that were not asserted
     }
 
     fn basic_dict() -> Dictionary {
