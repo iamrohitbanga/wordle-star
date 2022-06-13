@@ -7,7 +7,7 @@ pub enum CharState {
 
 pub type CharGuess = (char, CharState);
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct GuessResult {
     pub char_guesses: Vec<CharGuess>,
 }

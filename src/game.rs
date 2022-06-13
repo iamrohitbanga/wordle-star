@@ -1,7 +1,7 @@
 use crate::dictionary::Dictionary;
-
 use crate::guess::CharState;
 use crate::guess::GuessResult;
+use crate::keyboard_view::KeyboardView;
 use std::cmp;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -10,6 +10,8 @@ pub struct Game<'a> {
     dict: &'a Dictionary,
     target_word: String,
     target_positions_map: HashMap<char, HashSet<usize>>,
+    keyboard_view: KeyboardView,
+    guess_results: Vec<GuessResult>,
 }
 
 impl<'a> Game<'a> {
@@ -23,6 +25,8 @@ impl<'a> Game<'a> {
             dict: dict,
             target_word: target_word.to_string(),
             target_positions_map: positions_map,
+            keyboard_view: KeyboardView::new(),
+            guess_results: vec![],
         };
     }
 
@@ -40,6 +44,12 @@ impl<'a> Game<'a> {
         }
 
         let guess_result = self.compute_char_guesses(&word);
+
+        for char_guess in (&guess_result.char_guesses).into_iter() {
+            self.keyboard_view.record_guess(&char_guess);
+        }
+
+        self.guess_results.push(guess_result.clone());
 
         Some(guess_result)
     }
@@ -262,6 +272,7 @@ mod tests {
             ]),
             game.guess_word("colon"),
         );
+        assert_keyboard_view("c", "ol", "", &game.keyboard_view);
 
         assert_char_guesses(
             &GuessResult::new(vec![
@@ -273,6 +284,7 @@ mod tests {
             ]),
             game.guess_word("spoon"),
         );
+        assert_keyboard_view("spn", "l", "o", &game.keyboard_view);
 
         assert_char_guesses(
             &GuessResult::new(vec![
@@ -284,17 +296,7 @@ mod tests {
             ]),
             game.guess_word("potoo"),
         );
-
-        assert_char_guesses(
-            &GuessResult::new(vec![
-                ('o', CharState::CorrectPosition),
-                ('v', CharState::CorrectPosition),
-                ('o', CharState::CorrectPosition),
-                ('l', CharState::CorrectPosition),
-                ('o', CharState::CorrectPosition),
-            ]),
-            game.guess_word("ovolo"),
-        );
+        assert_keyboard_view("spnt", "l", "o", &game.keyboard_view);
 
         assert_char_guesses(
             &GuessResult::new(vec![
@@ -306,6 +308,19 @@ mod tests {
             ]),
             game.guess_word("siena"),
         );
+        assert_keyboard_view("siepnta", "l", "o", &game.keyboard_view);
+
+        assert_char_guesses(
+            &GuessResult::new(vec![
+                ('o', CharState::CorrectPosition),
+                ('v', CharState::CorrectPosition),
+                ('o', CharState::CorrectPosition),
+                ('l', CharState::CorrectPosition),
+                ('o', CharState::CorrectPosition),
+            ]),
+            game.guess_word("ovolo"),
+        );
+        assert_keyboard_view("spnt", "", "ovl", &game.keyboard_view);
     }
 
     fn assert_char_guesses(
@@ -315,6 +330,23 @@ mod tests {
         match actual_char_guesses {
             None => panic!("guess states not found"),
             Some(actual_guess) => assert_eq!(expected_states, &actual_guess),
+        }
+    }
+
+    fn assert_keyboard_view(
+        not_found: &str,
+        incorrect_position: &str,
+        correct_position: &str,
+        keyboard_view: &KeyboardView,
+    ) {
+        for ch in not_found.chars() {
+            assert_eq!(CharState::NotFound, keyboard_view.get(ch).unwrap(), "did not match for char: {ch}");
+        }
+        for ch in incorrect_position.chars() {
+            assert_eq!(CharState::IncorrectPosition, keyboard_view.get(ch).unwrap(), "did not match for char: {ch}");
+        }
+        for ch in correct_position.chars() {
+            assert_eq!(CharState::CorrectPosition, keyboard_view.get(ch).unwrap(), "did not match for char: {ch}");
         }
     }
 
