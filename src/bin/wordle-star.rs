@@ -1,3 +1,11 @@
+use cursive::theme::*;
+use cursive::traits::*;
+use cursive::views::{Dialog, DummyView, EditView, TextView};
+use cursive::{Cursive, CursiveExt, Printer};
+use cursive_core::{
+    views::{Button, FixedLayout, LinearLayout},
+    Rect,
+};
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
@@ -5,15 +13,47 @@ use wordle_star::dictionary::Dictionary;
 use wordle_star::game::Game;
 
 fn main() {
+    let mut siv = cursive::default();
     let filename = "data/en-dict-5letters.txt";
-    load_dict(filename);
-
     let mut dict = load_dict(filename);
+    let mut game = Game::new(dict, "colon");
 
-    let mut game = Game::new(&dict, "colon");
     let guess_result = game.guess_word("clone");
+    let guess_result = game.guess_word("corns");
     println!("guess result: {:?}", guess_result);
+
+    // You can load a theme from a file at runtime for fast development.
+    siv.load_theme_file("assets/style.toml").unwrap();
+
+    let panel1 = LinearLayout::horizontal().child(game.with_name("board"));
+
+    let buttons2 = LinearLayout::horizontal()
+        .child(DummyView)
+        .child(DummyView)
+        .child(DummyView)
+        .child(DummyView)
+        .child(DummyView)
+        .child(DummyView)
+        .child(DummyView)
+        .child(DummyView)
+        .child(DummyView)
+        .child(DummyView)
+        .child(DummyView)
+        .child(DummyView)
+        .child(DummyView)
+        .child(DummyView)
+        .child(DummyView)
+        .child(Button::new("Quit", Cursive::quit));
+
+    let view =
+        Dialog::around(LinearLayout::vertical().child(panel1).child(buttons2)).title("SUDOKU");
+
+    siv.add_layer(view);
+
+    siv.run();
 }
+
+fn show_popup(s: &mut Cursive, name: &str) {}
 
 fn load_dict(filename: &str) -> Dictionary {
     println!("loading dict from path: {}", filename);
@@ -42,3 +82,11 @@ where
     let file = File::open(filename)?;
     Ok(io::BufReader::new(file).lines())
 }
+
+fn restart(s: &mut Cursive) {}
+
+fn hint(s: &mut Cursive) {}
+
+fn undo(s: &mut Cursive) {}
+
+fn redo(s: &mut Cursive) {}

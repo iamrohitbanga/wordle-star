@@ -2,20 +2,32 @@ use crate::dictionary::Dictionary;
 use crate::guess::CharState;
 use crate::guess::GuessResult;
 use crate::keyboard_view::KeyboardView;
+use cursive::{
+    theme::{BaseColor, Color, ColorStyle, ColorType},
+    view::View,
+    Printer, Vec2,
+};
 use std::cmp;
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-pub struct Game<'a> {
-    dict: &'a Dictionary,
+enum GameState {
+    Playing,
+    Win,
+    Lose,
+}
+
+pub struct Game {
+    dict: Dictionary,
     target_word: String,
     target_positions_map: HashMap<char, HashSet<usize>>,
     keyboard_view: KeyboardView,
     guess_results: Vec<GuessResult>,
+    state: GameState,
 }
 
-impl<'a> Game<'a> {
-    pub fn new(dict: &'a Dictionary, target_word: &str) -> Game<'a> {
+impl Game {
+    pub fn new(dict: Dictionary, target_word: &str) -> Game {
         if !Game::is_word_allowed_in_dict(&dict, &target_word) {
             panic!("target word not present in dictionary");
         }
@@ -27,6 +39,7 @@ impl<'a> Game<'a> {
             target_positions_map: positions_map,
             keyboard_view: KeyboardView::new(),
             guess_results: vec![],
+            state: GameState::Playing,
         };
     }
 
@@ -111,6 +124,75 @@ impl<'a> Game<'a> {
         }
         map
     }
+
+    fn draw_keyboard_view(&self, printer: &Printer) {
+        let lines = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
+        for (line_num, line) in lines.into_iter().enumerate() {
+            for (pos, ch) in line.chars().enumerate() {
+                let bg_color = match self.keyboard_view.get(ch) {
+                    None => BaseColor::Black,
+                    Some(char_state) => match char_state {
+                        CharState::NotFound => BaseColor::Red,
+                        CharState::IncorrectPosition => BaseColor::Yellow,
+                        CharState::CorrectPosition => BaseColor::Green,
+                    },
+                };
+
+                let fg_color = match self.keyboard_view.get(ch) {
+                    None => BaseColor::White,
+                    Some(char_state) => BaseColor::Black,
+                };
+
+                let style = ColorStyle::new(
+                    ColorType::Color(Color::Dark(fg_color)),
+                    ColorType::Color(Color::Dark(bg_color)),
+                );
+
+                printer.with_color(style, |p| {
+                    p.print((pos * 2 + 30 + line_num, line_num * 2 + 5), &ch.to_string());
+                });
+            }
+        }
+    }
+
+    fn draw_board(&self, printer: &Printer) {
+        for (guess_index, guess_result) in self.guess_results.iter().enumerate() {
+            for (ch_index, char_guess) in guess_result.char_guesses.iter().enumerate() {
+                let bg_color = match char_guess.1 {
+                    CharState::NotFound => BaseColor::Red,
+                    CharState::IncorrectPosition => BaseColor::Yellow,
+                    CharState::CorrectPosition => BaseColor::Green,
+                };
+
+                let style = ColorStyle::new(
+                    ColorType::Color(Color::Dark(BaseColor::Black)),
+                    ColorType::Color(Color::Dark(bg_color)),
+                );
+                printer.with_color(style, |p| {
+                    p.print(
+                        (ch_index + 3, guess_index * 2 + 5),
+                        &char_guess.0.to_string(),
+                    );
+                });
+            }
+        }
+
+        self.draw_keyboard_view(printer);
+    }
+}
+
+impl View for Game {
+    fn draw(&self, printer: &Printer) {
+        match &self.state {
+            GameState::Playing => self.draw_board(&printer),
+            GameState::Win => self.draw_board(&printer),
+            GameState::Lose => self.draw_board(&printer),
+        }
+    }
+
+    fn required_size(&mut self, _: Vec2) -> Vec2 {
+        Vec2::new(150, 20)
+    }
 }
 
 #[cfg(test)]
@@ -124,7 +206,7 @@ mod tests {
         dict.add_word_str("dog");
         dict.add_word_str("cat");
 
-        Game::new(&dict, "dog");
+        Game::new(dict, "dog");
     }
 
     #[test]
@@ -135,7 +217,7 @@ mod tests {
         dict.add_word_str("dog");
         dict.add_word_str("cat");
 
-        Game::new(&dict, "star");
+        Game::new(dict, "star");
     }
 
     #[test]
@@ -146,20 +228,20 @@ mod tests {
         dict.add_word_str("dog");
         dict.add_word_str("cat");
 
-        Game::new(&dict, "mat");
+        Game::new(dict, "mat");
     }
 
     #[test]
     fn test_guess_invalid_word() {
         let dict = basic_dict();
-        let mut game = Game::new(&dict, "mat");
+        let mut game = Game::new(dict, "mat");
         assert_eq!(true, game.guess_word("abc").is_none());
     }
 
     #[test]
     fn test_guess_valid_word() {
         let dict = basic_dict();
-        let mut game = Game::new(&dict, "mat");
+        let mut game = Game::new(dict, "mat");
         assert_eq!(false, game.guess_word("sat").is_none());
     }
 
@@ -167,7 +249,7 @@ mod tests {
     fn test_char_guesses_for_colon() {
         let dict = big_dict();
 
-        let mut game = Game::new(&dict, "colon");
+        let mut game = Game::new(dict, "colon");
         assert_char_guesses(
             &GuessResult::new(vec![
                 ('c', CharState::CorrectPosition),
@@ -207,7 +289,7 @@ mod tests {
     fn test_char_guesses_for_clone() {
         let dict = big_dict();
 
-        let mut game = Game::new(&dict, "clone");
+        let mut game = Game::new(dict, "clone");
 
         assert_char_guesses(
             &GuessResult::new(vec![
@@ -261,7 +343,7 @@ mod tests {
     fn test_char_guesses_for_ovolo() {
         let dict = big_dict();
 
-        let mut game = Game::new(&dict, "ovolo");
+        let mut game = Game::new(dict, "ovolo");
 
         assert_char_guesses(
             &GuessResult::new(vec![
@@ -341,13 +423,25 @@ mod tests {
         keyboard_view: &KeyboardView,
     ) {
         for ch in not_found.chars() {
-            assert_eq!(CharState::NotFound, keyboard_view.get(ch).unwrap(), "did not match for char: {ch}");
+            assert_eq!(
+                CharState::NotFound,
+                keyboard_view.get(ch).unwrap(),
+                "did not match for char: {ch}"
+            );
         }
         for ch in incorrect_position.chars() {
-            assert_eq!(CharState::IncorrectPosition, keyboard_view.get(ch).unwrap(), "did not match for char: {ch}");
+            assert_eq!(
+                CharState::IncorrectPosition,
+                keyboard_view.get(ch).unwrap(),
+                "did not match for char: {ch}"
+            );
         }
         for ch in correct_position.chars() {
-            assert_eq!(CharState::CorrectPosition, keyboard_view.get(ch).unwrap(), "did not match for char: {ch}");
+            assert_eq!(
+                CharState::CorrectPosition,
+                keyboard_view.get(ch).unwrap(),
+                "did not match for char: {ch}"
+            );
         }
         // TODO: Add stricter checks for characters that were not asserted
     }

@@ -3,8 +3,10 @@ name = "wordle-star"
 version = "0.1.0"
 authors = ["Rohit Banga <iamrohitbanga@gmail.com>"]
 edition = "2021"
-include = ["/data/*.txt"]
+include = ["/data/*.txt", "assets/*"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+cursive = { version = "0.18", features = ["toml"] }
+cursive_core = { version = "0.3.2" }
