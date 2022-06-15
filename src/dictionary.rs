@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use rand::{thread_rng, Rng};
 
 /**
  * A dictionary of fixed length words. All words in the dictionary
@@ -34,6 +35,12 @@ impl Dictionary {
 
     pub fn add_word_str(&mut self, word: &str) {
         self.add_word(&word.to_string());
+    }
+
+    pub fn random_word(&self) -> String {
+        let wordvec = Vec::from_iter(&self.wordset);
+        let index = thread_rng().gen_range(0..wordvec.len());
+        wordvec[index].to_string()
     }
 
     pub fn contains(&self, word: &String) -> bool {
@@ -86,5 +93,15 @@ mod tests {
     fn test_word_length_mismatch() {
         let mut dict = Dictionary::new(4);
         dict.add_word_str("abc");
+    }
+
+    #[test]
+    fn test_random_word() {
+        let mut dict = Dictionary::new(4);
+        dict.add_word_str("abcd");
+        dict.add_word_str("bcda");
+
+        let r = dict.random_word();
+        assert!(r == "abcd" || r == "bcda");
     }
 }

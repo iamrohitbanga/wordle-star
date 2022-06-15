@@ -10,3 +10,4 @@ include = ["/data/*.txt", "assets/*"]
 [dependencies]
 cursive = { version = "0.18", features = ["toml"] }
 cursive_core = { version = "0.3.2" }
+rand = "0.8.5"
