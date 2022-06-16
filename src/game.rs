@@ -6,7 +6,7 @@ use std::cmp;
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum GameState {
     Playing,
     Win,
@@ -147,7 +147,54 @@ mod tests {
         dict.add_word_str("dog");
         dict.add_word_str("cat");
 
-        Game::new(dict, "dog", 3);
+        let game = Game::new(dict, "dog", 3);
+        assert_eq!(GameState::Playing, game.state);
+        assert_eq!(0, game.guess_results.len());
+        assert_keyboard_view("", "", "", &game.keyboard_view);
+    }
+
+    #[test]
+    #[should_panic(expected = "no more guesses allowed")]
+    fn test_game_win() {
+        let mut dict = Dictionary::new(3);
+        dict.add_word_str("rat");
+        dict.add_word_str("dog");
+        dict.add_word_str("cat");
+        dict.add_word_str("tar");
+
+        let mut game = Game::new(dict, "dog", 3);
+        assert_eq!(GameState::Playing, game.state);
+        game.guess_word("rat");
+        assert_eq!(GameState::Playing, game.state);
+        game.guess_word("cat");
+        assert_eq!(GameState::Playing, game.state);
+        game.guess_word("dog");
+        assert_eq!(GameState::Win, game.state);
+        assert_keyboard_view("rtac", "", "dog", &game.keyboard_view);
+
+        // no more guesses after the game has been won
+        game.guess_word("tar");
+    }
+
+    #[test]
+    #[should_panic(expected = "no more guesses allowed")]
+    fn test_game_lose() {
+        let mut dict = Dictionary::new(3);
+        dict.add_word_str("rat");
+        dict.add_word_str("dog");
+        dict.add_word_str("cat");
+
+        // only two attempts to win the game
+        let mut game = Game::new(dict, "dog", 2);
+
+        assert_eq!(GameState::Playing, game.state);
+        game.guess_word("rat");
+        assert_eq!(GameState::Playing, game.state);
+        game.guess_word("cat");
+        assert_eq!(GameState::Lose, game.state);
+        assert_keyboard_view("rtac", "", "", &game.keyboard_view);
+        // already lost, no more guesses
+        game.guess_word("dog");
     }
 
     #[test]
@@ -242,6 +289,7 @@ mod tests {
             ]),
             game.guess_word("colon"),
         );
+        assert_eq!(GameState::Playing, game.state);
 
         assert_char_guesses(
             &GuessResult::new(vec![
@@ -253,6 +301,7 @@ mod tests {
             ]),
             game.guess_word("spoon"),
         );
+        assert_eq!(GameState::Playing, game.state);
 
         // test with three occurences of same character
         // when the target word only contains it twice.
@@ -267,6 +316,7 @@ mod tests {
             ]),
             game.guess_word("ovolo"),
         );
+        assert_eq!(GameState::Playing, game.state);
 
         assert_char_guesses(
             &GuessResult::new(vec![
@@ -278,6 +328,7 @@ mod tests {
             ]),
             game.guess_word("siena"),
         );
+        assert_eq!(GameState::Playing, game.state);
     }
 
     #[test]
@@ -297,6 +348,7 @@ mod tests {
             game.guess_word("colon"),
         );
         assert_keyboard_view("c", "ol", "", &game.keyboard_view);
+        assert_eq!(GameState::Playing, game.state);
 
         assert_char_guesses(
             &GuessResult::new(vec![
@@ -309,6 +361,7 @@ mod tests {
             game.guess_word("spoon"),
         );
         assert_keyboard_view("spn", "l", "o", &game.keyboard_view);
+        assert_eq!(GameState::Playing, game.state);
 
         assert_char_guesses(
             &GuessResult::new(vec![
@@ -321,6 +374,7 @@ mod tests {
             game.guess_word("potoo"),
         );
         assert_keyboard_view("spnt", "l", "o", &game.keyboard_view);
+        assert_eq!(GameState::Playing, game.state);
 
         assert_char_guesses(
             &GuessResult::new(vec![
@@ -333,6 +387,7 @@ mod tests {
             game.guess_word("siena"),
         );
         assert_keyboard_view("siepnta", "l", "o", &game.keyboard_view);
+        assert_eq!(GameState::Playing, game.state);
 
         assert_char_guesses(
             &GuessResult::new(vec![
@@ -345,6 +400,7 @@ mod tests {
             game.guess_word("ovolo"),
         );
         assert_keyboard_view("spnt", "", "ovl", &game.keyboard_view);
+        assert_eq!(GameState::Win, game.state);
     }
 
     fn assert_char_guesses(
