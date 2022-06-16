@@ -3,6 +3,14 @@ use crate::guess::CharState;
 use std::cmp;
 use std::collections::HashMap;
 
+/// View of the keyboard at any point in the game.
+/// Initially the state of all characters is unknown.
+/// As guesses are submitted, we will update the view of the keyboard
+/// with the state of the characters.
+/// Note that it is possible that one guess finds the correct position of the character,
+/// while the second guess does not find the exact position of the character. In this case,
+/// the keyboard view contains the aggregate state, and it would say that the character
+/// has been found at the correct position.
 pub struct KeyboardView {
     keymap: HashMap<char, CharState>,
 }

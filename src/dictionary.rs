@@ -1,10 +1,8 @@
 use rand::{thread_rng, Rng};
 use std::collections::HashSet;
 
-/**
- * A dictionary of fixed length words. All words in the dictionary
- * have the same length drawn from the same alphabet.
- */
+/// A dictionary of fixed length words. All words in the dictionary
+/// have the same length drawn from the same alphabet.
 #[derive(Debug)]
 pub struct Dictionary {
     pub wordset: HashSet<String>,

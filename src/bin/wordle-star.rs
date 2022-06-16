@@ -65,9 +65,7 @@ fn main() {
     siv.run();
 }
 
-/**
- * Given a guess, submit it to the game and process the result.
- */
+/// Given a guess, submit it to the game and process the result.
 fn process_guess(s: &mut Cursive, guess: &str, shared_game: Rc<RefCell<Game>>) {
     let mut game = shared_game.borrow_mut();
     let guess_result = game.guess_word(&guess);
@@ -83,9 +81,7 @@ fn process_guess(s: &mut Cursive, guess: &str, shared_game: Rc<RefCell<Game>>) {
     }
 }
 
-/**
- * Display popup saying that the word is invalid.
- */
+/// Display popup saying that the word is invalid.
 fn invalid_word_popup(s: &mut Cursive, guess: &str) {
     let mut message = StyledString::plain("\n\n");
     message.append(StyledString::styled(
@@ -102,9 +98,7 @@ fn invalid_word_popup(s: &mut Cursive, guess: &str) {
     );
 }
 
-/**
- * Show message after the user wins.
- */
+/// Show message after the user wins.
 fn win(s: &mut Cursive) {
     let mut message = StyledString::plain("\n\n");
     message.append(StyledString::styled(
@@ -118,9 +112,7 @@ fn win(s: &mut Cursive) {
     );
 }
 
-/**
- * Show message after the user loses.
- */
+/// Show message after the user loses.
 fn lose(s: &mut Cursive, correct_word: &str) {
     let mut message = StyledString::plain("\n\n");
     message.append(StyledString::styled(
@@ -139,9 +131,7 @@ fn lose(s: &mut Cursive, correct_word: &str) {
     );
 }
 
-/**
- * Load dictionary from a file.
- */
+/// Load dictionary from a file.
 fn load_dict(filename: &str) -> Dictionary {
     println!("loading dict from path: {}", filename);
 
@@ -170,10 +160,8 @@ where
     Ok(io::BufReader::new(file).lines())
 }
 
-/**
- * A struct that wraps the wordle game into a board.
- * Used to render a view of the Wordle board.
- */
+/// A struct that wraps the wordle game into a board.
+/// Used to render a view of the Wordle board.
 struct BoardView {
     game: Rc<RefCell<Game>>,
 }
@@ -183,17 +171,13 @@ impl BoardView {
         BoardView { game: game }
     }
 
-    /**
-     * Draw the wordle board.
-     */
+    /// Draw the wordle board.
     pub fn draw_board(&self, printer: &Printer) {
         self.draw_guesses(printer);
         self.draw_keyboard_view(printer);
     }
 
-    /**
-     * Render all guesses so far.
-     */
+    /// Render all guesses so far.
     fn draw_guesses(&self, printer: &Printer) {
         let game = self.game.borrow();
 
@@ -223,10 +207,8 @@ impl BoardView {
         }
     }
 
-    /**
-     * Render the English alpha keyboard (qwerty), with hints
-     * based on guesses so far.
-     */
+    /// Render the English alpha keyboard (qwerty), with hints
+    /// based on guesses so far.
     fn draw_keyboard_view(&self, printer: &Printer) {
         let game = self.game.borrow();
         let lines = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
@@ -260,9 +242,7 @@ impl BoardView {
     }
 }
 
-/**
- * Cursive View to render the wordle board.
- */
+/// Cursive View to render the wordle board.
 impl View for BoardView {
     fn draw(&self, printer: &Printer) {
         self.draw_board(printer);

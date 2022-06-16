@@ -6,6 +6,7 @@ use std::cmp;
 use std::collections::HashMap;
 use std::collections::HashSet;
 
+/// Enum representing current state of the game.
 #[derive(Debug, PartialEq)]
 pub enum GameState {
     Playing,
@@ -13,17 +14,35 @@ pub enum GameState {
     Lose,
 }
 
+/// This struct encapsulates all properties of a wordle game.
 pub struct Game {
+    /// Dictionary of fixed length words to use
     dict: Dictionary,
+
+    /// word that has to be guessed, must be in the dictionary
     pub target_word: String,
-    target_positions_map: HashMap<char, HashSet<usize>>,
+
+    /// helper map to store index of each character in the target word
+    target_char_indexes: HashMap<char, HashSet<usize>>,
+
+    /// max guesses allowed
     max_guesses: usize,
+
+    /// state of the keyboard, given the guesses made so far in the game
     pub keyboard_view: KeyboardView,
+
+    /// results of each guess in order of submission
+    /// stores details of each character in the guessed word.
     pub guess_results: Vec<GuessResult>,
+
+    /// state of the game, in progress or finished?
     pub state: GameState,
 }
 
 impl Game {
+    /// Create a new Game with a given dictionary, and a target word.
+    /// panics if the target word is not in the dictionary.
+    /// Only max_guesses attempts may be made.
     pub fn new(dict: Dictionary, target_word: &str, max_guesses: usize) -> Game {
         if !Game::is_word_allowed_in_dict(&dict, &target_word) {
             panic!("target word not present in dictionary");
@@ -32,7 +51,7 @@ impl Game {
         return Game {
             dict: dict,
             target_word: target_word.to_string(),
-            target_positions_map: positions_map,
+            target_char_indexes: positions_map,
             keyboard_view: KeyboardView::new(),
             guess_results: vec![],
             state: GameState::Playing,
@@ -40,16 +59,16 @@ impl Game {
         };
     }
 
-    fn is_word_allowed_in_dict(dict: &Dictionary, word: &str) -> bool {
-        dict.contains(&word.to_string())
-    }
-
-    fn is_word_allowed(&self, word: &str) -> bool {
-        Game::is_word_allowed_in_dict(&self.dict, &word)
-    }
-
+    /// Submit a guess to the game.
+    /// panics if max guesses have already been submitted.
+    /// Returns an `Option` of `GuessResult`.
+    ///  -> None if the word is not allowed per the dictionary.
+    ///  -> Some(GuessResult) contains the result of submitting a guess.
+    /// The internal state of the game is updated based on the submission.
+    /// Game may be marked as won or lost accordingly. Other internal states
+    /// tracking the guesses are also updated.
     pub fn guess_word(&mut self, word: &str) -> Option<GuessResult> {
-        if !self.guesses_allowed() {
+        if !self.allow_more_guesses() {
             panic!("no more guesses allowed")
         }
 
@@ -58,28 +77,42 @@ impl Game {
             return None;
         }
 
-        let guess_result = self.compute_char_guesses(&word);
+        let guess_result = self.compute_guess_result(&word);
 
         for char_guess in (&guess_result.char_guesses).into_iter() {
             self.keyboard_view.record_guess(&char_guess);
         }
 
+        // append to internal guess results for later use
         self.guess_results.push(guess_result.clone());
 
         if guess_result.is_correct() {
             self.state = GameState::Win;
-        } else if !self.guesses_allowed() {
+        } else if !self.allow_more_guesses() {
             self.state = GameState::Lose;
         }
 
         Some(guess_result)
     }
 
-    fn guesses_allowed(&self) -> bool {
+    /// Check if the provided word is allowed per the dictionary.
+    fn is_word_allowed_in_dict(dict: &Dictionary, word: &str) -> bool {
+        dict.contains(&word.to_string())
+    }
+
+    /// Check if a word is allowed per the dictionary of the game.
+    fn is_word_allowed(&self, word: &str) -> bool {
+        Game::is_word_allowed_in_dict(&self.dict, &word)
+    }
+
+    /// Should we allow submitting more guesses? Returns true or false.
+    fn allow_more_guesses(&self) -> bool {
         self.guess_results.len() < self.max_guesses && self.state == GameState::Playing
     }
 
-    fn compute_char_guesses(&mut self, word: &str) -> GuessResult {
+    /// Internal helper method that computes the guess result for the provided word.
+    /// Assumes that the word is in the dictionary.
+    fn compute_guess_result(&mut self, word: &str) -> GuessResult {
         let mut char_guesses = vec![];
 
         for ch in word.chars() {
@@ -88,7 +121,7 @@ impl Game {
 
         let guess_map = Game::compute_char_positions_map(&word);
 
-        for (&ch, target_positions) in &self.target_positions_map {
+        for (&ch, target_positions) in &self.target_char_indexes {
             match guess_map.get(&ch) {
                 None => (),
                 Some(guess_positions) => {
@@ -122,13 +155,16 @@ impl Game {
         GuessResult::new(char_guesses)
     }
 
+    /// Compute a map of indexes of each character in the word provided.
     fn compute_char_positions_map(word: &str) -> HashMap<char, HashSet<usize>> {
         let mut map = HashMap::new();
         for (index, ch) in word.chars().enumerate() {
             if let None = map.get(&ch) {
+                // first occurrence of a character
                 map.insert(ch, HashSet::new());
             }
 
+            // must be found, safe to unwrap
             let positions = map.get_mut(&ch).unwrap();
             positions.insert(index);
         }
