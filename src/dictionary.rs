@@ -1,5 +1,5 @@
-use std::collections::HashSet;
 use rand::{thread_rng, Rng};
+use std::collections::HashSet;
 
 /**
  * A dictionary of fixed length words. All words in the dictionary
